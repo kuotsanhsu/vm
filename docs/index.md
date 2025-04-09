@@ -53,3 +53,6 @@ codesign --sign - --entitlements entitlements.plist main # main: is already sign
 codesign --sign - --entitlements entitlements.plist --force main # main: replacing existing signature
 ./main # No errors
 ```
+
+## Nested virtualization
+- [nestedVirtualizationSupported](https://developer.apple.com/documentation/virtualization/vzgenericplatformconfiguration/isnestedvirtualizationsupported?language=objc)
