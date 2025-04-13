@@ -1,7 +1,24 @@
 ## Web links
+- [Developer Forums > Hypervisor](https://developer.apple.com/forums/tags/hypervisor)
+  - [Access denied to Hypervisor redistributor register](https://developer.apple.com/forums/thread/766072)
+      > I would like try to boot the Linux kernel with the Hypervisor framework and see how far I get.
 - [Hypervisor.Framework Objective-C](https://developer.apple.com/documentation/hypervisor?language=objc)
 - [Demonstrates Hypervisor.Framework usage in Apple Silicon](https://gist.github.com/imbushuo/51b09e61ecd7b7ac063853ad65cedf34)
 - [clangd system headers](https://clangd.llvm.org/guides/system-headers)
+- Hypervisor.h usage
+  - https://github.com/qemu/qemu/blob/master/target/arm/hvf/hvf.c
+  - https://github.com/qemu/qemu/blob/master/accel/hvf/hvf-accel-ops.c
+  - https://github.com/utmapp/Hypervisor/blob/main/hv.c
+  - https://github.com/cloud-hypervisor/hypervisor-framework
+  - https://github.com/Impalabs/applevisor
+  - https://github.com/Code-Hex/vz/wiki
+    - [closed] add support for nested virtualization [#159](https://github.com/Code-Hex/vz/pull/159)
+  - https://github.com/crc-org/vfkit/blob/main/doc/quickstart.md
+    - [open] Add support for nested virtualization [#279](https://github.com/crc-org/vfkit/issues/279)
+  - Lima [nested virt](https://github.com/lima-vm/lima/blob/5bf53200e23559beef070d788ef3ae719194d6a3/pkg/vz/vm_darwin.go#L242)
+  - [krunkit](https://github.com/containers/krunkit/blob/main/docs/usage.md) supports [nested virt](https://github.com/containers/krunkit/commit/7281398e0d659e0facedcc0f872294def5d78783)
+  - libkrun supports [nested virt (EL2)](https://github.com/containers/libkrun/commit/6d1fd786b372e07b857e570acc07c6c2b986c411)
+  - https://www.youtube.com/watch?v=adTjIMXjBLc
 
 ## Commands
 - Get Makefile setting: `make -p | code -`

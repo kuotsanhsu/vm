@@ -30,3 +30,9 @@ git_export() {
   git archive --format=$ext --output="$dir.$ext" --prefix="$dir/" HEAD
 }
 git_export
+
+remote_run() {
+  scp main sehors:/tmp 
+  ssh sehors /tmp/main
+}
+remote_run
