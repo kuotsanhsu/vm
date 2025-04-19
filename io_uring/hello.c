@@ -63,12 +63,6 @@ int io_uring_enter(unsigned fd, unsigned to_submit, unsigned min_complete,
   return syscall(__NR_io_uring_enter, fd, to_submit, min_complete, flags, NULL,
                  0);
 }
-// #include <liburing/barrier.h>
-#define io_uring_smp_store_release(p, v)                                       \
-  atomic_store_explicit((_Atomic typeof(*(p)) *)(p), (v), memory_order_release)
-// #include <liburing/barrier.h>
-#define io_uring_smp_load_acquire(p)                                           \
-  atomic_load_explicit((_Atomic typeof(*(p)) *)(p), memory_order_acquire)
 
 void *uring_mmap(size_t len, off_t offset) {
   return mmap(0, len, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE,
@@ -90,6 +84,7 @@ int app_setup_uring() {
   int sring_sz = p.sq_off.array + p.sq_entries * sizeof(unsigned);
   int cring_sz = p.cq_off.cqes + p.cq_entries * sizeof(struct io_uring_cqe);
 
+  void *cq_ptr, *sq_ptr;
   // Rather than check for kernel version, the recommended way is to check the
   // features field of the io_uring_params structure, which is a bitmask. If
   // IORING_FEAT_SINGLE_MMAP is set, we can do away with the second mmap() call
@@ -98,27 +93,25 @@ int app_setup_uring() {
     // sring_sz = cring_sz = max(sring_sz, cring_sz);
     if (cring_sz > sring_sz) {
       sring_sz = cring_sz;
-    } else {
-      cring_sz = sring_sz;
     }
-  }
-
-  // Map in the submission and completion queue ring buffers. Kernels < 5.4 only
-  // map in the submission queue, though.
-  void *const sq_ptr = uring_mmap(sring_sz, IORING_OFF_SQ_RING);
-  if (sq_ptr == MAP_FAILED) {
-    warn("mmap sq_ptr");
-    return 1;
-  }
-
-  void *cq_ptr;
-  if (p.features & IORING_FEAT_SINGLE_MMAP) {
+    // Map in the submission and completion queue ring buffers.
+    sq_ptr = uring_mmap(sring_sz, IORING_OFF_SQ_RING);
+    if (sq_ptr == MAP_FAILED) {
+      warn("mmap sq_ptr");
+      return 1;
+    }
     cq_ptr = sq_ptr;
   } else {
     // Map in the completion queue ring buffer in older kernels separately
     cq_ptr = uring_mmap(cring_sz, IORING_OFF_CQ_RING);
     if (cq_ptr == MAP_FAILED) {
       warn("mmap cq_ptr");
+      return 1;
+    }
+    // Kernels < 5.4 only map in the submission queue, though.
+    sq_ptr = uring_mmap(sring_sz, IORING_OFF_SQ_RING);
+    if (sq_ptr == MAP_FAILED) {
+      warn("mmap sq_ptr");
       return 1;
     }
   }
@@ -146,8 +139,7 @@ int app_setup_uring() {
 }
 
 int read_from_cq() {
-  // Read barrier
-  unsigned head = io_uring_smp_load_acquire(cring_head);
+  const unsigned head = atomic_load_explicit(cring_head, memory_order_acquire);
   // Remember, this is a ring buffer. If head == tail, it means that the buffer
   // is empty.
   if (head == *cring_tail) {
@@ -158,15 +150,13 @@ int read_from_cq() {
   if (res < 0) {
     error(0, -res, "Error: read_from_cq");
   }
-  // Write barrier so that update to the head are made visible
-  ++head;
-  io_uring_smp_store_release(cring_head, head);
+  atomic_store_explicit(cring_head, head + 1, memory_order_release);
   return res;
 }
 
 int submit_to_sq(int fd, int opcode) {
   // Add our submission queue entry to the tail of the SQE ring buffer
-  unsigned tail = *sring_tail;
+  const unsigned tail = *sring_tail;
   const unsigned index = tail & *sring_mask;
   struct io_uring_sqe *sqe = &sqes[index];
   // Fill in the parameters required for the read or write operation
@@ -182,10 +172,7 @@ int submit_to_sq(int fd, int opcode) {
   sqe->off = offset;
 
   sring_array[index] = index;
-  ++tail;
-
-  // Update the tail
-  io_uring_smp_store_release(sring_tail, tail);
+  atomic_store_explicit(sring_tail, tail + 1, memory_order_release);
 
   // Tell the kernel we have submitted events with the io_uring_enter() system
   // call. We also pass in the IOURING_ENTER_GETEVENTS flag which causes the
