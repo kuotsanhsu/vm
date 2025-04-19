@@ -19,3 +19,16 @@ x86_64-unknown-linux-gnu-gcc -print-search-dirs
   - To override macOS `stdatomic.h`, specify an `-isystem=/opt/homebrew/Cellar/x86_64-unknown-linux-gnu/13.3.0/toolchain/lib/gcc/x86_64-unknown-linux-gnu/13.3.0/include`
     - > Address argument to atomic operation must be a pointer to a trivially-copyable type (`_Atomic(typeof (*(cring_head))) *` invalid) `clang(atomic_op_needs_trivial_copy)`
       - Is disallowing loading an _Atomic(...) type with __atomic_load intended? [#60572](https://github.com/llvm/llvm-project/issues/60572)
+
+## Update clangd
+
+- Setting ` "clangd.checkUpdates": true` in `settings.json` would yield this on startup:
+  > Failed to check for clangd update: Error: Cannot compare vendor's clangd version: Apple clangd version 17.0.0 (clang-1700.0.13.3) Features: mac+xpc Platform: arm64-apple-darwin24.4.0
+- `brew search clangd` won't find clangd; one must do `brew install llvm`.
+  - Setting `"clangd.path": "/opt/homebrew/opt/llvm/bin/clangd"` in `settings.json` would yield this on startup:
+    > clangd is up-to-date (you have 20.1.3, latest is 19.1.2)
+
+## clangd-20
+
+- Like clangd-17, external headers don't fall back to options extracted from `--query-driver`.
+- Like clangd-17, `stdatomic.h` from x86_64-unknown-linux-gnu still gives the same error `clang(atomic_op_needs_trivial_copy)`.
