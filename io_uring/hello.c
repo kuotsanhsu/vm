@@ -1,11 +1,36 @@
 #include <err.h>
 #include <error.h>
 #include <linux/io_uring.h>
+#include <signal.h>
 #include <stdatomic.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/syscall.h>
 #include <unistd.h>
+
+// https://man7.org/linux/man-pages/man2/io_uring_setup.2.html
+int io_uring_setup(unsigned entries, struct io_uring_params *p) {
+  return syscall(__NR_io_uring_setup, entries, p);
+}
+
+// https://man7.org/linux/man-pages/man2/io_uring_enter.2.html
+int io_uring_enter2(unsigned fd, unsigned to_submit, unsigned min_complete,
+                    unsigned flags, sigset_t *sig, size_t sz) {
+  return syscall(__NR_io_uring_enter, fd, to_submit, min_complete, flags, sig,
+                 sz);
+}
+
+// https://man7.org/linux/man-pages/man2/io_uring_enter.2.html
+int io_uring_enter(unsigned fd, unsigned to_submit, unsigned min_complete,
+                   unsigned flags, sigset_t *sig) {
+  return io_uring_enter2(fd, to_submit, min_complete, flags, sig, _NSIG / 8);
+}
+
+// https://man7.org/linux/man-pages/man2/io_uring_register.2.html
+int io_uring_register(unsigned fd, unsigned opcode, const void *arg,
+                      unsigned nr_args) {
+  return syscall(__NR_io_uring_register, fd, opcode, arg, nr_args);
+}
 
 #define QUEUE_DEPTH 1
 #define BLOCK_SZ 1024
@@ -49,19 +74,6 @@ int main() {
     }
     offset += res;
   }
-}
-
-// #include <liburing.h>
-// https://man7.org/linux/man-pages/man2/io_uring_setup.2.html
-int io_uring_setup(unsigned entries, struct io_uring_params *p) {
-  return syscall(__NR_io_uring_setup, entries, p);
-}
-// #include <liburing.h>
-// https://man7.org/linux/man-pages/man2/io_uring_enter.2.html
-int io_uring_enter(unsigned fd, unsigned to_submit, unsigned min_complete,
-                   unsigned flags) {
-  return syscall(__NR_io_uring_enter, fd, to_submit, min_complete, flags, NULL,
-                 0);
 }
 
 void *uring_mmap(size_t len, off_t offset) {
@@ -178,7 +190,7 @@ int submit_to_sq(int fd, int opcode) {
   // call. We also pass in the IOURING_ENTER_GETEVENTS flag which causes the
   // io_uring_enter() call to wait until min_complete (the 3rd param) events
   // complete.
-  const int ret = io_uring_enter(ring_fd, 1, 1, IORING_ENTER_GETEVENTS);
+  const int ret = io_uring_enter(ring_fd, 1, 1, IORING_ENTER_GETEVENTS, NULL);
   if (ret < 0) {
     // Errors that occur not on behalf of a submission queue entry are returned
     // via the system call directly. On such an error, a negative error code is
