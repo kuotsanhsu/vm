@@ -1,0 +1,3 @@
+# https://clangd.llvm.org/config.html
+CompileFlags:
+  Compiler: /opt/homebrew/Cellar/x86_64-unknown-linux-gnu/13.3.0/toolchain/bin/x86_64-linux-gnu-gcc

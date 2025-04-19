@@ -13,5 +13,8 @@
             "binaryPath": "${workspaceFolder}/main",
             "binaryArgs": []
         }
+    ],
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}/io_uring"
     ]
 }
