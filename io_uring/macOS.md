@@ -32,3 +32,4 @@ x86_64-unknown-linux-gnu-gcc -print-search-dirs
 
 - Like clangd-17, external headers don't fall back to options extracted from `--query-driver`.
 - Like clangd-17, `stdatomic.h` from x86_64-unknown-linux-gnu still gives the same error `clang(atomic_op_needs_trivial_copy)`.
+- [clangd: Provide the resource dir via environment variable](https://reviews.llvm.org/D154903)
