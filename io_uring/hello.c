@@ -51,17 +51,24 @@ int main() {
   }
 }
 
-/// https://man7.org/linux/man-pages/man2/io_uring_setup.2.html
+// #include <liburing.h>
+// https://man7.org/linux/man-pages/man2/io_uring_setup.2.html
 int io_uring_setup(unsigned entries, struct io_uring_params *p) {
   return syscall(__NR_io_uring_setup, entries, p);
 }
-
-/// https://man7.org/linux/man-pages/man2/io_uring_enter.2.html
+// #include <liburing.h>
+// https://man7.org/linux/man-pages/man2/io_uring_enter.2.html
 int io_uring_enter(unsigned fd, unsigned to_submit, unsigned min_complete,
                    unsigned flags) {
   return syscall(__NR_io_uring_enter, fd, to_submit, min_complete, flags, NULL,
                  0);
 }
+// #include <liburing/barrier.h>
+#define io_uring_smp_store_release(p, v)                                       \
+  atomic_store_explicit((_Atomic typeof(*(p)) *)(p), (v), memory_order_release)
+// #include <liburing/barrier.h>
+#define io_uring_smp_load_acquire(p)                                           \
+  atomic_load_explicit((_Atomic typeof(*(p)) *)(p), memory_order_acquire)
 
 void *uring_mmap(size_t len, off_t offset) {
   return mmap(0, len, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE,
@@ -70,8 +77,6 @@ void *uring_mmap(size_t len, off_t offset) {
 
 int app_setup_uring() {
   struct io_uring_params p = {};
-  void *sq_ptr, *cq_ptr;
-
   ring_fd = io_uring_setup(QUEUE_DEPTH, &p);
   if (ring_fd < 0) {
     // On error, a negative error code is returned. The caller should not rely
@@ -82,7 +87,6 @@ int app_setup_uring() {
 
   // io_uring communication happens via 2 shared kernel-user space ring buffers,
   // which can be jointly mapped with a single mmap() call in kernels >= 5.4.
-
   int sring_sz = p.sq_off.array + p.sq_entries * sizeof(unsigned);
   int cring_sz = p.cq_off.cqes + p.cq_entries * sizeof(struct io_uring_cqe);
 
@@ -101,12 +105,13 @@ int app_setup_uring() {
 
   // Map in the submission and completion queue ring buffers. Kernels < 5.4 only
   // map in the submission queue, though.
-  sq_ptr = uring_mmap(sring_sz, IORING_OFF_SQ_RING);
+  void *const sq_ptr = uring_mmap(sring_sz, IORING_OFF_SQ_RING);
   if (sq_ptr == MAP_FAILED) {
     warn("mmap sq_ptr");
     return 1;
   }
 
+  void *cq_ptr;
   if (p.features & IORING_FEAT_SINGLE_MMAP) {
     cq_ptr = sq_ptr;
   } else {
@@ -139,12 +144,6 @@ int app_setup_uring() {
 
   return 0;
 }
-
-// Macros for barriers needed by io_uring
-#define io_uring_smp_store_release(p, v)                                       \
-  atomic_store_explicit((_Atomic typeof(*(p)) *)(p), (v), memory_order_release)
-#define io_uring_smp_load_acquire(p)                                           \
-  atomic_load_explicit((_Atomic typeof(*(p)) *)(p), memory_order_acquire)
 
 int read_from_cq() {
   // Read barrier
