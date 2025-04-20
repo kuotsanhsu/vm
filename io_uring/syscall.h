@@ -1,6 +1,4 @@
-#ifndef IO_URING_SYSCALL_H
-#define IO_URING_SYSCALL_H
-
+#pragma once
 #include <linux/io_uring.h>
 #include <signal.h>
 #include <sys/syscall.h>
@@ -31,5 +29,3 @@ static inline int io_uring_register(unsigned fd, unsigned opcode,
                                     const void *arg, unsigned nr_args) {
   return syscall(__NR_io_uring_register, fd, opcode, arg, nr_args);
 }
-
-#endif // IO_URING_SYSCALL_H

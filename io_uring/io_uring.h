@@ -1,6 +1,4 @@
-#ifndef IO_URING_H
-#define IO_URING_H
-
+#pragma once
 #include <linux/io_uring.h>
 
 struct io_uring {
@@ -30,5 +28,3 @@ struct io_uring {
 
 int io_uring_init(struct io_uring *ring, unsigned entries, unsigned flags,
                   unsigned sq_thread_cpu, unsigned sq_thread_idle);
-
-#endif // IO_URING_H
