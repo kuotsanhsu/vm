@@ -1,7 +1,7 @@
 // https://git.kernel.dk/cgit/liburing/tree/src/setup.c
 
 #include "io_uring.h"
-#include "io_uring/syscall.h"
+#include "syscall.h"
 #include <sys/mman.h>
 
 static inline size_t max(size_t a, size_t b) { return a >= b ? a : b; }

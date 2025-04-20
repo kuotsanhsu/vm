@@ -1,8 +1,7 @@
 #include "io_uring.h"
-#include "io_uring/syscall.h"
+#include "syscall.h"
 #include <err.h>
 #include <error.h>
-#include <linux/io_uring.h>
 #include <stdatomic.h>
 
 int main() {
