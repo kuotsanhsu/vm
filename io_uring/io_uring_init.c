@@ -1,5 +1,3 @@
-// https://git.kernel.dk/cgit/liburing/tree/src/setup.c
-
 #include "io_uring.h"
 #include "syscall.h"
 #include <sys/mman.h>
