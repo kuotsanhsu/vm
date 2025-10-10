@@ -3,29 +3,31 @@
 #include <err.h>
 #include <error.h>
 #include <stdatomic.h>
+#include <unistd.h>
 
 int main() {
   const unsigned entries = 1;
   struct io_uring ring;
   const int ret = io_uring_init(&ring, entries, 0, 0, 0);
-  if (ret < 0) {
-    error(1, -ret, "failed to set up io_uring");
-  } else if (ret == 1) {
+  switch (ret) {
+  case 0:
+    break;
+  case 1:
     err(1, "failed to map the submission queue entries");
-  } else if (ret == 2) {
-    err(1, "failed to map the submission queue");
-  } else if (ret != 0) {
-    errx(1, "unknown failure in io_uring_init");
+  case 2:
+    err(1, "failed to map the submission and completion queues");
+  default:
+    if (ret < 0) {
+      error(1, -ret, "failed to set up io_uring");
+    } else {
+      errx(1, "unknown failure in io_uring_init");
+    }
   }
 
+  // _io_uring_get_sqe
   const unsigned tail = *ring.sq.tail;
-  const unsigned index = tail & *ring.sq.ring_mask;
-  struct io_uring_sqe *const sqe = &ring.sqes[index];
-  sqe->opcode = IORING_OP_WRITE;
-  sqe->fd = 0;
-  sqe->addr = (unsigned long long)"hello\n";
-  sqe->user_data = sqe->len = 6;
-  sqe->off = 0;
+  const unsigned index = tail & ring.sq.ring_mask;
+  io_uring_write(ring.sqes + index, STDOUT_FILENO, "hello\n", 6);
   ring.sq.array[index] = index;
   atomic_store_explicit(ring.sq.tail, tail + entries, memory_order_release);
   const int tasks =
@@ -42,8 +44,7 @@ int main() {
   if (head + entries != *ring.cq.tail) {
     errx(1, "completion queue does not contain exactly %u entries", entries);
   }
-  const struct io_uring_cqe *const cqe =
-      ring.cqes + (head & *ring.cq.ring_mask);
+  const struct io_uring_cqe *const cqe = ring.cqes + (head & ring.cq.ring_mask);
   if (cqe->res < 0) {
     error(1, -cqe->res, "failed to write");
   } else if (cqe->res != cqe->user_data) {

@@ -4,6 +4,13 @@
         "source.organizeImports": "explicit",
         "source.fixAll": "explicit",
     },
+    "[json][jsonc][jsonl]": {
+        "editor.formatOnSave": false,
+        "editor.quickSuggestions": {
+            "strings": true
+        },
+        "editor.suggest.insertMode": "replace"
+    },
     "makefile.clearOutputBeforeBuild": true,
     "makefile.configureOnEdit": true,
     "makefile.configureOnOpen": true,

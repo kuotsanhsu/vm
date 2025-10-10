@@ -40,16 +40,16 @@ int io_uring_init(struct io_uring *ring, unsigned entries, unsigned flags,
 
   ring->sq.head = q + p.sq_off.head;
   ring->sq.tail = q + p.sq_off.tail;
-  ring->sq.ring_mask = q + p.sq_off.ring_mask;
-  ring->sq.ring_entries = q + p.sq_off.ring_entries;
+  ring->sq.ring_mask = *(unsigned *)(q + p.sq_off.ring_mask);
+  ring->sq.ring_entries = *(unsigned *)(q + p.sq_off.ring_entries);
   ring->sq.flags = q + p.sq_off.flags;
   ring->sq.dropped = q + p.sq_off.dropped;
   ring->sq.array = q + p.sq_off.array;
 
   ring->cq.head = q + p.cq_off.head;
   ring->cq.tail = q + p.cq_off.tail;
-  ring->cq.ring_mask = q + p.cq_off.ring_mask;
-  ring->cq.ring_entries = q + p.cq_off.ring_entries;
+  ring->cq.ring_mask = *(unsigned *)(q + p.cq_off.ring_mask);
+  ring->cq.ring_entries = *(unsigned *)(q + p.cq_off.ring_entries);
   ring->cq.flags = q + p.cq_off.flags;
   ring->cq.overflow = q + p.cq_off.overflow;
   ring->cqes = q + p.cq_off.cqes;
